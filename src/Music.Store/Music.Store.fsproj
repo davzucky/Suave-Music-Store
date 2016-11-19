@@ -40,7 +40,6 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
-    <Reference Include="" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="path.fs" />
