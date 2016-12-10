@@ -10,3 +10,8 @@ module Store =
     let browse = "/store/browse"
     let details : IntPath = "/store/details/%d" 
     let browseKey = "genre"
+
+module Admin =
+    let manage = "/admin/manage"
+    let deleteAlbum : IntPath = "/admin/delete/%d"
+
