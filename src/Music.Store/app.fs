@@ -32,8 +32,9 @@ let browse =
             |> html
         | Choice2Of2 msg -> BAD_REQUEST msg)
 
-let manage = warbler (fun _ ->
-    Db.getAlbumsDetails
+let manage = warbler (fun x ->
+    let a = x
+    Db.getAlbumsDetails ()
     |> View.manage
     |> html)
 
@@ -57,8 +58,8 @@ let webPart =
         path Path.Store.overview >=> overview
         path Path.Store.browse >=> browse
         pathScan Path.Store.details details
-        path Path.Admin.manage >=> manage
         pathScan Path.Admin.deleteAlbum deleteAlbum
+        path Path.Admin.manage >=> manage
         pathRegex "(.*)\.(css|png)" >=> Files.browseHome
         html View.notFound
     ]

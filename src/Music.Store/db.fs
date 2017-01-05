@@ -3,14 +3,20 @@ module SuaveMusicStore.Db
 open FSharp.Data
 open System.IO
 
+open Suave
+open Suave.Successful
+open Suave.Filters
+open Suave.Operators
+open Suave.RequestErrors
+
 type Genres= CsvProvider<"./data/genres.csv">
 type Artists= CsvProvider<"./data/artists.csv">
-type Albums = CsvProvider<"./data/albums.csv",CacheRows=false>
+type Albums = CsvProvider<"./data/albums.csv">
 
 let albumsFilePath = "./data/albums.csv"
 let genres = Genres.Load("./data/genres.csv")
 let artists = Artists.Load("./data/artists.csv")
-let albums = Albums.Load(albumsFilePath)
+let mutable albums = Albums.Load(albumsFilePath)
 
 type AlbumDetails = { AlbumId:int; AlbumArtUrl:string; Price:decimal; Title:string; Artist:string; Genre:string } 
 
@@ -57,7 +63,7 @@ let getAlbumDetails id : AlbumDetails option =
         Artist= getArtistName albumDetail.ArtistId; 
         Genre= getGenreName albumDetail.GenreId }
 
-let getAlbumsDetails : AlbumDetails list = 
+let getAlbumsDetails () : AlbumDetails list = 
     albums.Rows 
     |> Seq.map (fun a -> 
             { 
@@ -67,15 +73,17 @@ let getAlbumsDetails : AlbumDetails list =
                 Title=a.Title; 
                 Artist= getArtistName a.ArtistId; 
                 Genre= getGenreName a.GenreId })
-    |> Seq.toList   
+    |> Seq.toList
 
 let getAlbum id : Album option = 
-    albums.Filter  (fun a -> a.AlbumId = id)
-    |> Seq.tryHead
+    albums.Rows
+    |> Seq.tryFind(fun a -> a.AlbumId = id)
 
 let deleteAlbum (album : Album) = 
     use writer = new StreamWriter(albumsFilePath)
     let albumsWithoutDelteItem = albums.Filter (fun a -> a.AlbumId <> album.AlbumId)
     let csvContent = albumsWithoutDelteItem.SaveToString()
     writer.Write(csvContent)
-    
+    writer.Flush() 
+    writer.Close()
+    albums <- Albums.Load(albumsFilePath)    

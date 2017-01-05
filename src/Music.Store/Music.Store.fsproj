@@ -42,8 +42,8 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="path.fs" />
     <Compile Include="db.fs" />
+    <Compile Include="path.fs" />
     <Compile Include="view.fs" />
     <Compile Include="app.fs" />
     <Content Include="Site.css">
