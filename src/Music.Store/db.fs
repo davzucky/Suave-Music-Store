@@ -78,12 +78,32 @@ let getAlbumsDetails () : AlbumDetails list =
 let getAlbum id : Album option = 
     albums.Rows
     |> Seq.tryFind(fun a -> a.AlbumId = id)
-
 let deleteAlbum (album : Album) = 
-    use writer = new StreamWriter(albumsFilePath)
     let albumsWithoutDelteItem = albums.Filter (fun a -> a.AlbumId <> album.AlbumId)
+    use writer = new StreamWriter(albumsFilePath)
     let csvContent = albumsWithoutDelteItem.SaveToString()
     writer.Write(csvContent)
     writer.Flush() 
     writer.Close()
     albums <- Albums.Load(albumsFilePath)    
+
+let getArtists () : Artist list = 
+    artists.Rows |> Seq.toList
+let getNextAlbumId =
+    let maxId = 
+        albums.Rows
+        |> Seq.map (fun a -> a.AlbumId)
+        |> Seq.max
+    maxId + 1
+
+let createAlbum (artistId, genreId, price, title) =
+    let newRow = Albums.Row(getNextAlbumId, genreId, artistId, title, price, "/placeholder.gif")
+    let newAlbumns = albums.Append [newRow]
+    use writer = new StreamWriter(albumsFilePath)
+    let csvContent = newAlbumns.SaveToString()
+    writer.Write(csvContent)
+    writer.Flush() 
+    writer.Close()
+    albums <- Albums.Load(albumsFilePath)  
+
+

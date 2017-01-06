@@ -1,9 +1,11 @@
 module SuaveMusicStore.View
 
 open Suave.Html
+open Suave.Form
 open System
 
 let divId id = divAttr ["id", id]
+let divClass c = divAttr ["class", c]
 let h1 xml = tag "h1" [] xml
 let h2 s = tag "h2" [] (text s)
 let aHref href = tag "a" ["href", href]
@@ -18,6 +20,8 @@ let tr x = tag "tr" [] (flatten x)
 let td x = tag "td" [] (flatten x)
 let strong s = tag "strong" [] (text s)
 let form x = tag "form" ["method", "POST"] (flatten x)
+let fieldset x = tag "fieldset" [] (flatten x)
+let legend txt = tag "legend" [] (text txt)
 let submitInput value = inputAttr ["type", "submit"; "value", value]
 let truncate k (s : string) =
     if s.Length > k then
@@ -74,6 +78,9 @@ let details (album : Db.AlbumDetails) = [
 
 let manage (albums : Db.AlbumDetails list) = [ 
     h2 "Index"
+    p [
+        aHref Path.Admin.createAlbum (text "Create New")
+    ] 
     table [
         yield tr [
             for t in ["Artist";"Title";"Genre";"Price";""] -> th [ text t ]
@@ -103,6 +110,66 @@ let deleteAlbum albumTitle = [
     form [
         submitInput "Delete"
     ]
+
+    div [
+        aHref Path.Admin.manage (text "Back to list")
+    ]
+]
+
+type Field<'a> = {
+    Label : string
+    Xml : Form<'a> -> Suave.Html.Xml
+}
+
+type Fieldset<'a> = {
+    Legend : string
+    Fields : Field<'a> list
+}
+
+type FormLayout<'a> = {
+    Fieldsets : Fieldset<'a> list
+    SubmitText : string
+    Form : Form<'a>
+}
+
+let renderForm (layout : FormLayout<_>) =    
+
+    form [
+        for set in layout.Fieldsets -> 
+            fieldset [
+                yield legend set.Legend
+
+                for field in set.Fields do
+                    yield divClass "editor-label" [
+                        text field.Label
+                    ]
+                    yield divClass "editor-field" [
+                        field.Xml layout.Form
+                    ]
+            ]
+
+        yield submitInput layout.SubmitText
+    ]   
+
+let createAlbum genres artists = [ 
+    h2 "Create"
+
+    renderForm
+        { Form = Form.album
+          Fieldsets = 
+              [ { Legend = "Album"
+                  Fields = 
+                      [ { Label = "Genre"
+                          Xml = selectInput (fun f -> <@ f.GenreId @>) genres None }
+                        { Label = "Artist"
+                          Xml = selectInput (fun f -> <@ f.ArtistId @>) artists None }
+                        { Label = "Title"
+                          Xml = input (fun f -> <@ f.Title @>) [] }
+                        { Label = "Price"
+                          Xml = input (fun f -> <@ f.Price @>) [] }
+                        { Label = "Album Art Url"
+                          Xml = input (fun f -> <@ f.ArtUrl @>) ["value", "/placeholder.gif"] } ] } ]
+          SubmitText = "Create" }
 
     div [
         aHref Path.Admin.manage (text "Back to list")

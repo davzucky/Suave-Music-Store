@@ -5,6 +5,12 @@ open Suave.Successful
 open Suave.Filters
 open Suave.Operators
 open Suave.RequestErrors
+open Suave.Form
+open Suave.Model.Binding
+
+
+let bindToForm form handler =
+    bindReq (bindForm form) handler BAD_REQUEST
 
 let html container =
     OK (View.index container)
@@ -52,6 +58,21 @@ let deleteAlbum id =
     | None ->
         never
 
+let createAlbum =
+    choose [
+        GET >=> warbler (fun _ -> 
+            let genres = 
+                Db.getGenres 
+                |> List.map (fun g -> decimal g.GenreId, g.Name)
+            let artists = 
+                Db.getArtists ()
+                |> List.map (fun g -> decimal g.ArtistId, g.Name)
+            html (View.createAlbum genres artists))
+        POST >=> bindToForm Form.album (fun form ->
+            Db.createAlbum (int form.ArtistId, int form.GenreId, form.Price, form.Title)
+            Redirection.FOUND Path.Admin.manage)
+    ]
+
 let webPart = 
     choose [
         path Path.home >=> html View.home
@@ -60,6 +81,7 @@ let webPart =
         pathScan Path.Store.details details
         pathScan Path.Admin.deleteAlbum deleteAlbum
         path Path.Admin.manage >=> manage
+        path Path.Admin.createAlbum >=> createAlbum
         pathRegex "(.*)\.(css|png)" >=> Files.browseHome
         html View.notFound
     ]
